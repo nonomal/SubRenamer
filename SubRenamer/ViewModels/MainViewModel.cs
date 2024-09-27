@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -10,8 +11,10 @@ using DynamicData;
 using Microsoft.Extensions.DependencyInjection;
 using SubRenamer.Common;
 using SubRenamer.Helper;
+using SubRenamer.Core;
 using SubRenamer.Model;
 using SubRenamer.Services;
+using MatchItem = SubRenamer.Model.MatchItem;
 
 namespace SubRenamer.ViewModels;
 
@@ -111,17 +114,13 @@ public partial class MainViewModel : ViewModelBase
     #endregion
     
     #region Rename
-    
-    /**
-     * Update the Rename Task List
-     */
-    private void UpdateRenameTaskList() =>
-        GetRenameService().UpdateRenameTaskList(MatchList, RenameTasks);
-    
     /**
      * Update when preview button clicked
      */
-    partial void OnShowRenameTasksChanged(bool value) => UpdateRenameTaskList();
+    partial void OnShowRenameTasksChanged(bool value)
+    {
+        GetRenameService().UpdateRenameTaskList(MatchList, RenameTasks);
+    }
 
     /**
      * Perform Rename Task
@@ -129,7 +128,7 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void PerformRename()
     {
-        UpdateRenameTaskList();
+        ShowRenameTasks = true;
         GetRenameService().ExecuteRename(RenameTasks);
     }
     
@@ -143,7 +142,15 @@ public partial class MainViewModel : ViewModelBase
     private void PerformMatch()
     {
         ShowRenameTasks = false;
-        var result = Matcher.Matcher.Execute(MatchList.ToList());
+        var inputItems = MatcherDataConverter.ConvertMatchItems(MatchList);
+        var m = Config.Get().MatchMode;
+        var resultRaw = Matcher.Execute(inputItems, new MatcherOptions()
+        {
+            // Convert Config to MatcherOptions
+            VideoRegex = (m != MatchMode.Diff) ? (m == MatchMode.Manual ? Config.Get().ManualVideoRegex : Config.Get().VideoRegex) : null,
+            SubtitleRegex = (m != MatchMode.Diff) ? (m == MatchMode.Manual ? Config.Get().ManualSubtitle : Config.Get().SubtitleRegex) : null,
+        });
+        var result =  MatcherDataConverter.ConvertMatchItems(resultRaw);
         result.ForEach(UpdateMatchItemStatus);
         MatchList = new ObservableCollection<MatchItem>(result);
     }
@@ -207,9 +214,9 @@ public partial class MainViewModel : ViewModelBase
     public void SyncCurrentStatusText() =>
         CurrMatchModeText = Config.Get().MatchMode switch
         {
-            MatchMode.Diff => "自动匹配",
-            MatchMode.Manual => "手动匹配",
-            MatchMode.Regex => "正则匹配",
+            MatchMode.Diff => Application.Current.GetResource<string>("App.Strings.RulesAutoMatch") ?? "Diff",
+            MatchMode.Manual => Application.Current.GetResource<string>("App.Strings.RulesManualMatch") ?? "Manual",
+            MatchMode.Regex => Application.Current.GetResource<string>("App.Strings.RulesRegexMatch") ?? "Regex",
             _ => ""
         };
     

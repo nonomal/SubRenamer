@@ -4,9 +4,11 @@
 
 <img src="https://github.com/qwqcode/SubRenamer/assets/22412567/ef9b38b0-d1c6-4f1f-9f7e-f7b67a36d9b5" width="150" align="right" />
 
-🎞 字幕文件一键批量重命名工具
+🎞 字幕文件批量改名工具
 
-> A Subtitle File Batch Renaming Tool with One-Click Automation and Intelligence.
+A Tool for Batch Rename Subtitle Files to Match Video Names with One Click.
+
+(Read this in other languages: [English](README.en.md))
 
 **原因？** 如果视频和字幕文件名一致，任何视频播放器都可以自动载入字幕。
 
@@ -43,21 +45,24 @@ SubRenamer 专注于字幕文件改名，简单易用。
 
 - **自动匹配**：自动识别算法，一键匹配
 - **拖拽导入**：拖拽快速导入文件及文件夹
-- **多语言筛选**：自动检测并筛选指定语言的字幕
-- **多种匹配规则**：对于复杂的文件名格式，支持手动匹配
+- **多语言匹配**：支持视频字幕多语言匹配（一对多映射）
+- **多语言筛选**：导入前自动检测并筛选指定语言的字幕
+- **多匹配规则**：对于复杂的文件名格式，支持手动匹配
 - **手动匹配编辑器**：自定义规则，支持简单通配符
 - **正则表达式编辑器**：包含正则表达式匹配测试工具
 - **匹配微调**：支持对匹配结果进行微调
 - **改名命令**：右键快速复制 Linux 改名命令到剪贴板
 - **字幕备份**：改名前自动备份字幕文件
-- **后缀名**：通过后缀名自动区分视频和字幕，支持自定义
+- **追加后缀**：支持在文件扩展名前添加自定义后缀
+- **文件识别**：通过文件扩展名自动区分视频和字幕，支持自定义
 - **快捷键**：支持快捷键操作，提高效率
 - **夜间模式**：支持夜间模式，跟随系统切换
+- **窗口置顶**：支持窗口置顶，方便操作
 - **跨平台**：支持 Windows、macOS、Linux
 - **体积小**：仅 15MB 左右
 
 > [!IMPORTANT]\
-> 重制说明：SubRenamer 第一版于 2019 年发布，当时使用 WinForm 进行开发，仅支持 Windows 平台。2024 年 SubRenamer 完成重制发布 v2.0 版本，采用全新技术栈 AvaloniaUI + .NET 8 开发，支持跨平台，能够在 Windows、macOS、Linux 上原生运行（不是 Electron.js）。
+> 重制说明：SubRenamer 第一版于 2019 年发布，当时使用 WinForm 进行开发，仅支持 Windows 平台。2024 年 SubRenamer 完成重制发布 v2.0 版本，采用全新技术栈 AvaloniaUI + .NET 8 开发，支持跨平台，可以在 Windows、macOS、Linux 上原生运行（不是 Electron.js）。
 
 <img width="800" src="https://github.com/qwqcode/SubRenamer/assets/22412567/9b620a47-61cb-418a-b6d3-3dd2e0140f69">
 
@@ -73,9 +78,9 @@ SubRenamer 专注于字幕文件改名，简单易用。
 |-|-|
 | <img width="600" src="https://github.com/qwqcode/SubRenamer/assets/22412567/fa46d20a-3c95-440f-90a1-f50df192c876"> |  <img width="512" src="https://github.com/qwqcode/SubRenamer/assets/22412567/59e1b56f-14d9-4414-adcc-7f259b138a35"> |
 
-| 右键菜单 | 快捷键支持 | 字幕备份 |
+| 右键菜单 | 快捷键支持 | 设置界面 |
 |-|-|-|
-| <img width="224" src="https://github.com/qwqcode/SubRenamer/assets/22412567/e890b761-149f-4902-90ea-6f7ff7b91699"> | <img width="224" src="https://github.com/qwqcode/SubRenamer/assets/22412567/b06126e1-4541-442e-b76f-5de792c7db81"> | <img width="412" src="https://github.com/qwqcode/SubRenamer/assets/22412567/dbb0305a-9d1a-4d85-9e9a-7c7a45a82e25"> |
+| <img width="224" src="https://github.com/qwqcode/SubRenamer/assets/22412567/e890b761-149f-4902-90ea-6f7ff7b91699"> | <img width="224" src="https://github.com/qwqcode/SubRenamer/assets/22412567/b06126e1-4541-442e-b76f-5de792c7db81"> | <img width="412" src="https://github.com/user-attachments/assets/84d5c217-1bf1-4d0d-b137-899189b44553"> |
 
 **拖拽导入文件**
 
@@ -97,7 +102,9 @@ SubRenamer 专注于字幕文件改名，简单易用。
 
 为实施自动匹配，需导入至少两个文件名格式一致的视频文件和两个字幕文件。
 
-> 相关代码可见：[SubRenamer/Matcher](https://github.com/qwqcode/SubRenamer/tree/main/SubRenamer/Matcher)
+- 算法代码：[SubRenamer.Core](https://github.com/qwqcode/SubRenamer/tree/main/SubRenamer.Core)（入口函数位于 [Matcher.cs](https://github.com/qwqcode/SubRenamer/blob/main/SubRenamer.Core/Matcher.cs) 文件内）
+- 单元测试代码：[SubRenamer.Tests](https://github.com/qwqcode/SubRenamer/tree/main/SubRenamer.Tests)
+- 测试用例数据：[TopLevelTests.json](https://github.com/qwqcode/SubRenamer/blob/main/SubRenamer.Tests/MatcherTests/TopLevelTests.json)（**其中包含了自动匹配算法的示例数据**）
 
 ### 手动匹配模式
 
@@ -107,7 +114,7 @@ SubRenamer 专注于字幕文件改名，简单易用。
 
 <details>
 
-<summary>请听 ABCDE 的故事：</summary>
+<summary>请听 ABCDE 的故事（🌫️</summary>
 
 > (缩减版) 小A下载了一部新更的生肉番，又从字幕网站下载到了一套字幕文件，生肉番的 视频文件名 常常和 字幕文件名 不一致，看番时需要手动选定字幕，下次打开又得重新选定。小A拥有了 **SubRenamer**，从此改名交给他来做，终于可以安安心心看番啦。
 
@@ -146,6 +153,17 @@ AVALONIA_SCREEN_SCALE_FACTORS="eDP-1=2;" ./SubRenamer
 - https://github.com/AvaloniaUI/Avalonia/issues/9390
 - https://github.com/AvaloniaUI/Avalonia/wiki/Configuring-X11-per-monitor-DPI
 
+## 多语言翻译 (I18n)
+
+SubRenamer 支持多语言切换，目前支持的语言有：
+
+- English
+- 简体中文 (Simplified Chinese)
+- 繁體中文 (Traditional Chinese)
+- 日本語 (Japanese)
+
+语言文件位于：[SubRenamer/Assets/Lang](https://github.com/qwqcode/SubRenamer/blob/main/SubRenamer/Assets/Lang) 目录内，可以通过编辑 XAML 文件来添加或完善语言翻译。我们期待你的参与，欢迎提交 PR 添加更多语言翻译。
+
 ## 有 BUG?
 
 可在 [issues 页](https://github.com/qwqcode/SubRenamer/issues) 反馈。
@@ -156,21 +174,67 @@ AVALONIA_SCREEN_SCALE_FACTORS="eDP-1=2;" ./SubRenamer
 
 ## 编译说明
 
-建议使用 Rider 或 Visual Studio 2022 打开项目。
+建议使用 JetBrains Rider 或 Visual Studio 2022 打开项目。
 
 ### Prerequisites
 
-Windows
+**Windows**
+
+- Visual Studio 2022, including .NET 8 & Desktop development with C++ workload.
+- Alternatively, you can install JetBrains Rider to build the project. (Recommended).
+
+**Fedora (36+)**
 
 ```bash
-Visual Studio 2022, including .NET 8 & Desktop development with C++ workload.
+sudo dnf group install "C Development Tools and Libraries" "Development Tools"
+
+sudo dnf install dotnet-sdk-8.0 libicu-devel cmake zlib-devel -y
 ```
 
-Ubuntu (20.04+)
+**Ubuntu (20.04+)**
 
 ```bash
 sudo apt-get install dotnet-sdk-8.0 libicu-dev cmake zlib1g-dev -y
 ```
+
+**macOS (12+)**
+
+```bash
+# Install Homebrew
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install xcode command line tools
+xcode-select --install
+
+# Install dependencies
+brew install dotnet-sdk8 icu4c cmake zlib
+```
+
+****
+
+### 单元测试
+
+```bash
+dotnet test SubRenamer.Tests --verbosity normal
+```
+
+单元测试代码位于 [SubRenamer.Tests](https://github.com/qwqcode/SubRenamer/tree/main/SubRenamer.Tests) 目录内，推荐使用 Rider 内置的可视化工具执行测试和查看测试结果。
+
+<img width="1432" src="https://github.com/user-attachments/assets/4e922f6b-08f0-4e72-9d8d-90db8358e46c">
+
+**测试数据**
+
+[TopLevelTests.json](https://github.com/qwqcode/SubRenamer/blob/main/SubRenamer.Tests/MatcherTests/TopLevelTests.json) 文件存放了测试用例数据，包含各种各样的字幕和视频文件名列表用于测试匹配算法，欢迎提交 PR 添加更多测试用例，修改文件后执行单元测试命令即可查看测试结果。
+
+每次代码提交将通过 GitHub Actions 自动执行单元测试，确保代码质量。
+
+### 构建单文件
+
+在 Win 平台，为了构建出单个包含静态链接依赖库的 exe 文件（无额外的动态链接 dll 依赖库文件），需要手动把 [这几个 dll 文件](https://github.com/qwqcode/qwqcode/releases/tag/dotnet-lib) 下载放到 `native` 目录内。然后添加环境变量 `ENABLE_NATIVE_LIBS=true` 再执行编译。
+
+- https://github.com/qwqcode/SubRenamer/blob/main/.github/workflows/dotnet-desktop.yml
+- https://github.com/AvaloniaUI/Avalonia/issues/9503
+- https://github.com/qwqcode/SubRenamer/blob/main/SubRenamer/SubRenamer.csproj
 
 ### Publish with NativeAOT
 

@@ -9,7 +9,7 @@
         SizeToContent="Height"
         x:Class="SubRenamer.Views.SettingsWindow"
         x:DataType="vm:SettingsViewModel"
-        Title="设置">
+        Title="{DynamicResource App.Strings.SettingsTitle}">
         
         <Design.DataContext>
                 <vm:SettingsViewModel/>
@@ -34,40 +34,66 @@
         </Window.Styles>
         
         <StackPanel Margin="20">
-                <CheckBox IsChecked="{Binding BackupEnabled}">备份原始字幕</CheckBox>
-                <Label Foreground="Gray" Margin="30 0 30 10" FontSize="13" Padding="0">程序会复制字幕到视频目录，若目录相同则备份到 SubBackup</Label>
+                <StackPanel Orientation="Horizontal" Spacing="15">
+                        <TextBlock Text="{DynamicResource App.Strings.SettingsLanguage}" FontSize="14" VerticalAlignment="Center" />
+                        <ComboBox MaxDropDownHeight="200" SelectedIndex="{Binding LanguageIndex}" ItemsSource="{Binding LanguageTitles}">
+                                <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                                <TextBlock Text="{Binding}" />
+                                        </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                        </ComboBox>
+                </StackPanel>
+                <Border Height="15" />
+                <Border BorderThickness=".5" BorderBrush="#D2D4D5"></Border>
+                <Border Height="15" />
+                <CheckBox IsChecked="{Binding BackupEnabled}" Content="{DynamicResource App.Strings.SettingsBackupOriginalSubtitles}" />
+                <TextBlock Text="{DynamicResource App.Strings.SettingsBackupHint}" Foreground="Gray" Margin="30 0 30 10" FontSize="13" Padding="0" TextWrapping="Wrap" />
                 <!-- <CheckBox>确认删除对话框</CheckBox> -->
                 <!-- <CheckBox>显示文件完整路径</CheckBox> -->
-                <CheckBox IsChecked="{Binding KeepLangExt}">保留语言后缀</CheckBox>
-                <Label Foreground="Gray" Margin="30 0 30 10" FontSize="13" Padding="0">例如 "subtitle.sc.srt" 保留语言后缀 ".sc"</Label>
-                <CheckBox IsChecked="{Binding UpdateCheckEnabled}">程序升级检查</CheckBox>
+                <CheckBox IsChecked="{Binding FileConflictFilter}" Content="{DynamicResource App.Strings.SettingsLanguageFilterDialog}" />
+                <TextBlock Text="{DynamicResource App.Strings.SettingsLanguageFilterHint}" Foreground="Gray" FontSize="13" Padding="0" Margin="30 0 30 10" TextWrapping="Wrap" />
+                <CheckBox IsChecked="{Binding KeepLangExt}" IsEnabled="{Binding !CustomLangExtEnabled}" Content="{DynamicResource App.Strings.SettingsKeepLanguageSuffix}" />
+                <TextBlock Text="{DynamicResource App.Strings.SettingsKeepLanguageSuffixHint}" Foreground="Gray" Margin="30 0 30 10" FontSize="13" Padding="0" TextWrapping="Wrap" />
+                <CheckBox IsChecked="{Binding CustomLangExtEnabled}" Content="{DynamicResource App.Strings.SettingsAddCustomSuffix}" />
+                <StackPanel Margin="30 0 0 0">
+                        <TextBlock Text="{DynamicResource App.Strings.SettingsAddCustomSuffixHint}" Foreground="Gray" FontSize="13" Padding="0" Margin="0 0 0 10" TextWrapping="Wrap" />
+                        <TextBox IsEnabled="{Binding CustomLangExtEnabled}" Watermark="{DynamicResource App.Strings.SettingsCustomSuffixWatermark}" Text="{Binding CustomLangExt}" />
+                </StackPanel>
                 <Border Height="15" />
-                <Grid HorizontalAlignment="Stretch" ColumnDefinitions="*,10,*">
+                <CheckBox IsChecked="{Binding FileClsExtAppendEnabled}" Content="{DynamicResource App.Strings.SettingsFileFormatExtension}" />
+                <TextBlock Text="{DynamicResource App.Strings.SettingsFileFormatExtensionHint}" Foreground="Gray" Margin="30 0 30 8" FontSize="13" Padding="0" TextWrapping="Wrap" />
+                <Grid IsEnabled="{Binding FileClsExtAppendEnabled}"  Margin="30 0 0 0" HorizontalAlignment="Stretch" ColumnDefinitions="*,10,*">
                         <StackPanel Grid.Column="0">
-                                <TextBlock Margin="0 5">视频格式扩充</TextBlock>
-                                <Label Foreground="Gray" Margin="0 0 0 10" Padding="0" FontSize="13">用于识别视频文件</Label>
-                                <TextBox Watermark="以逗号分隔" Text="{Binding VideoExtAppend}" />
+                                <TextBlock Margin="0 5 0 10" FontSize="13" Text="{DynamicResource App.Strings.SettingsSubtitleFormatExtension}" />
+                                <TextBox Watermark="{DynamicResource App.Strings.SettingsSubtitleFormatWatermark}" Text="{Binding SubtitleExtAppend}" />  
                         </StackPanel>
                         <StackPanel Grid.Column="2">
-                                <TextBlock Margin="0 5">字幕格式扩充</TextBlock>
-                                <Label Foreground="Gray" Margin="0 0 0 10" Padding="0" FontSize="13">用于识别字幕文件</Label>
-                                <TextBox Watermark="以逗号分隔" Text="{Binding SubtitleExtAppend}" />  
+                                <TextBlock Margin="0 5 0 10" FontSize="13" Text="{DynamicResource App.Strings.SettingsVideoFormatExtension}" />
+                                <TextBox Watermark="{DynamicResource App.Strings.SettingsVideoFormatWatermark}" Text="{Binding VideoExtAppend}" />
                         </StackPanel>
                 </Grid>
-                
-                <Border Height="30" />
-                <TextBlock TextWrapping="Wrap" FontSize="13" LineHeight="24" Foreground="#5f6b7c">
-                        |´・ω・)ノ 嗨！这是开源程序<LineBreak />
-                        你可以在 <Button Classes="hyperlink" Content="GitHub" Command="{Binding OpenLinkCommand}" CommandParameter="https://github.com/qwqcode/SubRenamer" /> 找到源代码，请考虑点个 Star 🌟这会对我们很有帮助！
+                <Border Height="15" />
+                <CheckBox IsChecked="{Binding UpdateCheckEnabled}" Content="{DynamicResource App.Strings.SettingsUpdateCheck}" />
+
+                <Border Height="20" />
+                <TextBlock TextWrapping="Wrap" FontSize="13" LineHeight="26" Foreground="#5f6b7c">
+                        <TextBlock.Inlines>
+                                <Run Text="{DynamicResource App.Strings.SettingsOpenSourceProgram}" />
+                                <LineBreak />
+                                <Run Text="{DynamicResource App.Strings.SettingsConsiderStar1}" />
+                                <Button Classes="hyperlink" Content="{DynamicResource App.Strings.SettingsConsiderStar2}" Margin="0 5 0 0" Command="{Binding OpenLinkCommand}" CommandParameter="https://github.com/qwqcode/SubRenamer" />
+                                <Run Text="{DynamicResource App.Strings.SettingsConsiderStar3}" />
+                        </TextBlock.Inlines>
                 </TextBlock>
                 
-                <Border Height="5" />
+                <Border Height="15" />
                 <Border BorderThickness=".5" BorderBrush="#D2D4D5"></Border>
                 
                 <Border Height="15" />
                 <StackPanel Orientation="Horizontal" Spacing="15">
-                        <Button Classes="hyperlink" Content="反馈问题" Command="{Binding OpenLinkCommand}" CommandParameter="https://github.com/qwqcode/SubRenamer/issues/new" />
-                        <Button Classes="hyperlink" Content="更新日志" Command="{Binding OpenLinkCommand}" CommandParameter="https://github.com/qwqcode/SubRenamer/releases" />
+                        <Button Classes="hyperlink" Content="{DynamicResource App.Strings.SettingsFeedback}" Command="{Binding OpenLinkCommand}" CommandParameter="https://github.com/qwqcode/SubRenamer/issues/new" />
+                        <Button Classes="hyperlink" Content="{DynamicResource App.Strings.SettingsChangelog}" Command="{Binding OpenLinkCommand}" CommandParameter="https://github.com/qwqcode/SubRenamer/releases" />
                 </StackPanel>
         </StackPanel>
 </Window>
