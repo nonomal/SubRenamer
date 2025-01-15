@@ -1,22 +1,28 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DynamicData;
 using Microsoft.Extensions.DependencyInjection;
 using SubRenamer.Common;
 using SubRenamer.Helper;
+using SubRenamer.Core;
 using SubRenamer.Model;
 using SubRenamer.Services;
+using MatchItem = SubRenamer.Model.MatchItem;
 
 namespace SubRenamer.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
+    [ObservableProperty] private bool _allowExecute = true;
     [ObservableProperty] private ObservableCollection<MatchItem> _matchList = [];
     [ObservableProperty] private Collection<MatchItem> _selectedItems = [];
     [ObservableProperty] private ObservableCollection<RenameTask> _renameTasks = [];
@@ -27,6 +33,7 @@ public partial class MainViewModel : ViewModelBase
     private static IDialogService GetDialogService() => App.Current!.Services!.GetService<IDialogService>()!;
     private static IFilesService GetFilesService() => App.Current!.Services!.GetService<IFilesService>()!;
     private static IRenameService GetRenameService() => App.Current!.Services!.GetService<IRenameService>()!;
+    private static ISubSyncService GetSubSyncService() => App.Current!.Services!.GetService<ISubSyncService>()!;
     private static IImportService GetImportService() => App.Current!.Services!.GetService<IImportService>()!;
     #endregion
     
@@ -69,7 +76,7 @@ public partial class MainViewModel : ViewModelBase
      */
     [RelayCommand]
     private async Task OpenFile() =>
-        await Import(await GetFilesService().OpenFilesAsync());
+        await Import(await GetFilesService().OpenFilesAsync([ FilesService.VideosAndSubtitles ]));
     
     /**
      * Open a folder
@@ -111,28 +118,53 @@ public partial class MainViewModel : ViewModelBase
     #endregion
     
     #region Rename
-    
-    /**
-     * Update the Rename Task List
-     */
-    private void UpdateRenameTaskList() =>
-        GetRenameService().UpdateRenameTaskList(MatchList, RenameTasks);
-    
     /**
      * Update when preview button clicked
      */
-    partial void OnShowRenameTasksChanged(bool value) => UpdateRenameTaskList();
+    partial void OnShowRenameTasksChanged(bool value)
+    {
+        GetRenameService().UpdateRenameTaskList(MatchList, RenameTasks);
+    }
 
     /**
      * Perform Rename Task
      */
     [RelayCommand]
-    private void PerformRename()
+    private void Run()
     {
-        UpdateRenameTaskList();
-        GetRenameService().ExecuteRename(RenameTasks);
+        ShowRenameTasks = true;
+        Task.Run(async () =>
+        {
+            AllowExecute = false;
+
+            try
+            {
+                // Execute Rename
+                await GetRenameService().ExecuteRename(RenameTasks);
+            
+                // Execute SubSync
+                if (SubSyncAvailable && SubSyncEnabled)
+                {
+                    await GetSubSyncService().ExecuteSubSync(RenameTasks);
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBoxHelper.ShowError($"Failed to execute: {e.Message}\n\n{e.StackTrace}");
+            }
+            
+            AllowExecute = true;
+        });
     }
     
+    #endregion
+
+    #region SubSync
+    [ObservableProperty] private bool _subSyncAvailable = true;
+    [ObservableProperty] private bool _subSyncEnabled = Config.Get().SubSyncEnabled;
+
+    partial void OnSubSyncEnabledChanged(bool value)
+        => Config.Get().SubSyncEnabled = value;
     #endregion
     
     #region Match
@@ -142,8 +174,20 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void PerformMatch()
     {
+        var filenameNormalizer = new MatcherFilenameNormalizer();
         ShowRenameTasks = false;
-        var result = Matcher.Matcher.Execute(MatchList.ToList());
+        var inputItems = MatcherDataConverter.ConvertMatchItems(MatchList);
+        inputItems = filenameNormalizer.Normalize(inputItems);
+        var m = Config.Get().MatchMode;
+        var resultRaw = Matcher.Execute(inputItems, new MatcherOptions()
+        {
+            // Convert Config to MatcherOptions
+            VideoRegex = (m != MatchMode.Diff) ? (m == MatchMode.Manual ? Config.Get().ManualVideoRegex : Config.Get().VideoRegex) : null,
+            SubtitleRegex = (m != MatchMode.Diff) ? (m == MatchMode.Manual ? Config.Get().ManualSubtitle : Config.Get().SubtitleRegex) : null,
+        });
+        resultRaw = filenameNormalizer.Denormalize(resultRaw);
+        filenameNormalizer.Clear();
+        var result =  MatcherDataConverter.ConvertMatchItems(resultRaw);
         result.ForEach(UpdateMatchItemStatus);
         MatchList = new ObservableCollection<MatchItem>(result);
     }
@@ -180,6 +224,36 @@ public partial class MainViewModel : ViewModelBase
     }
     
     /**
+     * Perform subtitle sync
+     */
+    [RelayCommand]
+    private void PerformSubSyncSelected()
+    {
+        if (SelectedItems.Count == 0) return;
+        var list = SelectedItems.Select(x => x.Status switch
+        {
+            MatchItemStatus.Altered => (x.Video,
+                RenameTasks.FirstOrDefault(y => y.MatchItem == x)?.Alter ?? ""),
+            _ => (x.Video, x.Subtitle),
+        }).Where(x => x.Item1 != "" && x.Item2 != "").ToList();
+        if (list.Count == 0) return;
+
+        Task.Run(async () =>
+        {
+            AllowExecute = false;
+            try
+            {
+                await GetSubSyncService().ExecuteSubSync(list);
+            }
+            catch (Exception e)
+            {
+                MessageBoxHelper.ShowError($"Failed to execute: {e.Message}\n\n{e.StackTrace}");
+            }
+            AllowExecute = true;
+        });
+    }
+    
+    /**
      * Reveal file in folder
      */
     [RelayCommand]
@@ -194,6 +268,9 @@ public partial class MainViewModel : ViewModelBase
             });
             return false;
         });
+    
+    [RelayCommand]
+    private void ExitPreviewMode() => ShowRenameTasks = false;
     #endregion
     
     #region MenuBar
@@ -207,11 +284,14 @@ public partial class MainViewModel : ViewModelBase
     public void SyncCurrentStatusText() =>
         CurrMatchModeText = Config.Get().MatchMode switch
         {
-            MatchMode.Diff => "自动匹配",
-            MatchMode.Manual => "手动匹配",
-            MatchMode.Regex => "正则匹配",
+            MatchMode.Diff => Application.Current.GetResource<string>("App.Strings.RulesAutoMatch") ?? "Diff",
+            MatchMode.Manual => Application.Current.GetResource<string>("App.Strings.RulesManualMatch") ?? "Manual",
+            MatchMode.Regex => Application.Current.GetResource<string>("App.Strings.RulesRegexMatch") ?? "Regex",
             _ => ""
         };
+
+    public void SyncSubSyncStatus() =>
+        SubSyncAvailable = GetSubSyncService().GetIsAvailable();
     
     /**
      * Open version link

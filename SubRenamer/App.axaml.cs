@@ -1,22 +1,16 @@
 using System;
-using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Markup.Xaml.Styling;
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using SubRenamer.ViewModels;
 using SubRenamer.Views;
 using Microsoft.Extensions.DependencyInjection;
-using MsBox.Avalonia;
-using MsBox.Avalonia.Dto;
-using MsBox.Avalonia.Enums;
-using MsBox.Avalonia.Models;
 using SubRenamer.Helper;
 using SubRenamer.Model;
 using SubRenamer.Services;
@@ -44,9 +38,15 @@ namespace SubRenamer
             {
                 // Load user config
                 Config.Load();
-                
+
                 // load theme
                 Config.ApplyThemeMode(Config.Get().ThemeMode);
+
+                // load i18n
+                if (string.IsNullOrWhiteSpace(Config.Get().Language))
+                    Config.Get().Language = I18NHelper.GetLanguageNameFromOs();
+                if (Config.Get().Language != I18NHelper.DefaultLanguage)
+                    Application.Current.Translate(Config.Get().Language);
 
                 var mainWindowStore = new MainViewModel();
                 desktop.MainWindow = new MainWindow
@@ -62,6 +62,7 @@ namespace SubRenamer
                 services.AddSingleton<IClipboardService>(x => new ClipboardService(desktop.MainWindow));
                 services.AddSingleton<IImportService>(x => new ImportService(desktop.MainWindow));
                 services.AddSingleton<IRenameService>(x => new RenameService(desktop.MainWindow));
+                services.AddSingleton<ISubSyncService>(x => new SubSyncService(desktop.MainWindow));
                 services.AddSingleton<IWindowService>(x => new WindowService(desktop.MainWindow, OnSetTopmost));
 
                 Services = services.BuildServiceProvider();
@@ -127,7 +128,7 @@ namespace SubRenamer
             Current?.Services?.GetService<IDialogService>()?.OpenSettings();
         }
 
-        private static void _afterInitTasks(MainViewModel? mainWindowStore)
+        private static void _afterInitTasks(MainViewModel store)
         {
             IssueReporter.CheckCrashAndShowDialog();
             
@@ -140,10 +141,10 @@ namespace SubRenamer
                 try
                 {
                     var updateSrc = await Updater.GetUpdatesAsync();
-                    if (updateSrc != null && mainWindowStore != null)
+                    if (updateSrc != null)
                     {
-                        mainWindowStore.CurrVersionText += " (有更新)";
-                        mainWindowStore.CurrVersionBtnLink = updateSrc;
+                        store.CurrVersionText += " " + Application.Current.GetResource<string>("App.Strings.MenuUpdateAlert");
+                        store.CurrVersionBtnLink = updateSrc;
                     }
                 }
                 catch (Exception e)
@@ -164,6 +165,29 @@ namespace SubRenamer
                 catch (Exception e)
                 {
                     Console.WriteLine(e);
+                }
+            });
+
+            Task.Run(async () =>
+            {
+                var subSyncService = Current?.Services?.GetService<ISubSyncService>()!;
+                subSyncService.OnBootstrapped += () =>
+                {
+                    store.SubSyncAvailable = true;
+                };
+                subSyncService.OnShutdown += () =>
+                {
+                    store.SubSyncAvailable = false;
+                    store.SubSyncEnabled = false;
+                };
+                try
+                {
+                    await subSyncService.Bootstrap();
+                }
+                catch (Exception)
+                {
+                    store.SubSyncAvailable = false;
+                    store.SubSyncEnabled = false;
                 }
             });
         }

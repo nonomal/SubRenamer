@@ -10,9 +10,12 @@ namespace SubRenamer;
 public partial class Config
 {
     public ThemeMode ThemeMode { get; set; } = ThemeMode.Default;
+    public string Language { get; set; } = "";
     public bool Backup { get; set; } = true;
     public bool UpdateCheck { get; set; } = true;
     public bool KeepLangExt { get; set; } = false;
+    public string CustomLangExt { get; set; } = "";
+    public bool FileConflictFilter { get; set; } = true;
     public string VideoExtAppend { get; set; } = "";
     public string SubtitleExtAppend { get; set; } = "";
     
@@ -20,6 +23,8 @@ public partial class Config
     
     public string VideoRegex { get; set; } = "";
     public string SubtitleRegex { get; set; } = "";
+    
+    public bool SubSyncEnabled { get; set; } = true;
     
     // Manual Match Mode Configs
     public string ManualVideoRegex { get; set; } = "";

@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -8,6 +6,7 @@ using Avalonia.Platform.Storage;
 using SubRenamer.Helper;
 using static SubRenamer.Common.Constants;
 using SubRenamer.Model;
+using Avalonia;
 
 namespace SubRenamer.Services;
 
@@ -24,14 +23,16 @@ public class FilesService : IFilesService
     {
         Patterns = GetVideoExtensions().Concat(GetSubtitleExtensions()).Select(x => $"*.{x}").ToArray(),
     };
+
+    public Task<IReadOnlyList<IStorageFile>> OpenFilesAsync() => OpenFilesAsync([]);
     
-    public async Task<IReadOnlyList<IStorageFile>> OpenFilesAsync()
+    public async Task<IReadOnlyList<IStorageFile>> OpenFilesAsync(FilePickerFileType[] fileTypes)
     {
         var files = await _target.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
         {
-            Title = "选择并导入文件",
+            Title = Application.Current.GetResource<string>("App.Strings.OpenFileDialogTitle"),
             AllowMultiple = true,
-            FileTypeFilter = new []{ VideosAndSubtitles },
+            FileTypeFilter = fileTypes,
         });
 
         return files;
@@ -41,7 +42,7 @@ public class FilesService : IFilesService
     {
         var folders = await _target.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions()
         {
-            Title = "导入文件夹",
+            Title = Application.Current.GetResource<string>("App.Strings.OpenFolderDialogTitle"),
             AllowMultiple = true,
         });
         
@@ -52,7 +53,7 @@ public class FilesService : IFilesService
     {
         var files = await _target.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
         {
-            Title = "选择并打开文件",
+            Title = Application.Current.GetResource<string>("App.Strings.OpenFileDialogTitle"),
             AllowMultiple = false
         });
 
@@ -64,7 +65,7 @@ public class FilesService : IFilesService
     {
         return await _target.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
         {
-            Title = "Save Text File"
+            Title = Application.Current.GetResource<string>("App.Strings.SaveFileDialogTitle")
         });
     }
 }
